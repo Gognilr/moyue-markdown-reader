@@ -37,7 +37,7 @@
 - `npm run build`：通过；仍有大分包与动态/静态重复导入警告，未当作性能验收完成。
 - `cargo test --manifest-path src-tauri/Cargo.toml`：20 项测试通过。
 - `npm audit --omit=dev --registry=https://registry.npmjs.org/`：1 high / 8 moderate，尚未关闭。
-- NSIS 候选安装包：5,601,464 bytes，SHA-256 `CACFA361DA9AA58870B7E29020F077E986D24C1B9290ED493042AE921D5E9A58`，Authenticode 状态 `NotSigned`。
+- NSIS 候选安装包：5,561,079 bytes，SHA-256 `64F3D27829345C9355FB8C8727DA3E39C064286DFBE0422A90E6BD778CBED4AA`，Authenticode 状态 `NotSigned`。
 - 本轮已运行完整核心回归并重新打包，但尚未完成干净机安装及重启后历史文件授权恢复验收，因此上述证据不能替代正式发布验收。
 
 ## 建议的仓库元数据
