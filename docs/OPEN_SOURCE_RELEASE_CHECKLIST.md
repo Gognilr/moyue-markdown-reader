@@ -32,12 +32,12 @@
 
 ### 2026-07-20 本地准备证据
 
-- `npm test`：75 个测试文件、220 项测试通过。
+- `npm test`：75 个测试文件、221 项测试通过。
 - `npm run test:e2e`：5 条 Microsoft Edge 核心场景通过。
 - `npm run build`：通过；仍有大分包与动态/静态重复导入警告，未当作性能验收完成。
 - `cargo test --manifest-path src-tauri/Cargo.toml`：20 项测试通过。
 - `npm audit --omit=dev --registry=https://registry.npmjs.org/`：1 high / 8 moderate，尚未关闭。
-- NSIS 候选安装包：5,561,079 bytes，SHA-256 `64F3D27829345C9355FB8C8727DA3E39C064286DFBE0422A90E6BD778CBED4AA`，Authenticode 状态 `NotSigned`。
+- NSIS 候选安装包：5,460,137 bytes，SHA-256 `AF4DAB44102B570658923E309CC47FEAAA1E583623D6696E4EE92BF66C4A29A8`，Authenticode 状态 `NotSigned`。
 - 本轮已运行完整核心回归并重新打包，但尚未完成干净机安装及重启后历史文件授权恢复验收，因此上述证据不能替代正式发布验收。
 
 ## 建议的仓库元数据

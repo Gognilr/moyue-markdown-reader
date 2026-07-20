@@ -17,8 +17,8 @@
 ## 下载
 
 - Windows x64 NSIS 安装包：`墨阅Markdown阅读器_1.0.0_x64-setup.exe`
-- 文件大小：5,561,079 bytes
-- SHA-256：`64F3D27829345C9355FB8C8727DA3E39C064286DFBE0422A90E6BD778CBED4AA`
+- 文件大小：5,460,137 bytes
+- SHA-256：`AF4DAB44102B570658923E309CC47FEAAA1E583623D6696E4EE92BF66C4A29A8`
 
 校验示例：
 
@@ -35,7 +35,7 @@ Get-FileHash -Algorithm SHA256 .\墨阅Markdown阅读器_1.0.0_x64-setup.exe
 
 ## 当前自动化验证
 
-- Vitest：75 个测试文件、220 项测试通过。
+- Vitest：75 个测试文件、221 项测试通过。
 - Microsoft Edge 端到端：5 条核心场景通过。
 - Rust：20 项测试通过。
 - 前端生产构建通过。
