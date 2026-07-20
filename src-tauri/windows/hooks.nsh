@@ -10,7 +10,7 @@
   ; Remove the legacy desktop link after the product was renamed.
   Delete "$DESKTOP\Markdown阅读器.lnk"
   Delete "$DESKTOP\${PRODUCTNAME}.lnk"
-  CreateShortCut "$DESKTOP\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe" "" "$INSTDIR\moyue-brand-crisp.ico" 0
+  CreateShortCut "$DESKTOP\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe" "" "$INSTDIR\moyue-shortcut-v2.ico" 0
   ; Ask Explorer to invalidate its view without terminating the user's shell.
   Exec '"$SYSDIR\ie4uinit.exe" -show'
 !macroend

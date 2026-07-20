@@ -48,7 +48,7 @@ import { ReadingPersonality } from '../../components/ReadingPersonality'
 import { suggestReadingPersonality } from '../reading-personality/readingPersonality'
 import { hasReadableDocument } from '../reading-personality/readingSuggestionVisibility'
 import { RecoveryCapsuleCard } from '../../components/RecoveryCapsule'
-import { createRecoveryCapsule, getRecoveryDocumentChangeImpact, loadRecoveryCapsule, removeRecoveryCapsule, saveRecoveryCapsule } from '../recovery/recoveryCapsule'
+import { canUseReadingRecovery, createRecoveryCapsule, getRecoveryDocumentChangeImpact, loadRecoveryCapsule, removeRecoveryCapsule, saveRecoveryCapsule } from '../recovery/recoveryCapsule'
 import { expandDisclosureBlocks } from '../recovery/resumeRecovery'
 import { DocumentLensPanel } from '../../components/DocumentLens'
 import { buildDocumentLens } from '../document-lens/documentLens'
@@ -362,7 +362,7 @@ export function MarkdownView({ compact = false }: { compact?: boolean } = {}) {
       : null)
     setSelection(null)
     readingStartedAt.current = Date.now()
-    setRecoveryCapsule(compact ? null : loadRecoveryCapsule(documentKey))
+    setRecoveryCapsule(compact || !canUseReadingRecovery(currentPath, content) ? null : loadRecoveryCapsule(documentKey))
     if (!ENABLE_ANNOTATION_WORKBENCH || !currentPath || !isTauri()) return
     let cancelled = false
     void (async () => {
@@ -448,7 +448,7 @@ export function MarkdownView({ compact = false }: { compact?: boolean } = {}) {
   }
 
   useEffect(() => () => {
-    if (compact) return
+    if (compact || !canUseReadingRecovery(currentPath, content)) return
     const container = containerRef.current
     const authoredDocument = markdownContentRef.current
     const maxScroll = (container?.scrollHeight ?? 0) - (container?.clientHeight ?? 0)

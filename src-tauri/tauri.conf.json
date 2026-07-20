@@ -13,16 +13,16 @@
     "active": true,
     "targets": "all",
     "resources": {
-      "icons/moyue/icon-brand-crisp.ico": "moyue-brand-crisp.ico"
+      "icons/moyue/shortcut-v2.ico": "moyue-shortcut-v2.ico"
     },
     "windows": {
       "nsis": {
         "installerHooks": "./windows/hooks.nsh",
-        "installerIcon": "./icons/moyue/icon-brand-crisp.ico",
-        "uninstallerIcon": "./icons/moyue/icon-brand-crisp.ico"
+        "installerIcon": "./icons/moyue/installer-v2.ico",
+        "uninstallerIcon": "./icons/moyue/installer-v2.ico"
       }
     },
-    "icon": ["icons/moyue/icon-brand-crisp.ico"],
+    "icon": ["icons/moyue/icon-v2.ico"],
     "fileAssociations": [
       {
         "ext": ["md", "markdown"],

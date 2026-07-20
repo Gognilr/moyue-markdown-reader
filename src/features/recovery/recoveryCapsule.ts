@@ -36,6 +36,11 @@ export interface RecoveryDocumentChangeImpact {
   message: string
 }
 
+/** A position-only capsule is meaningful only for a real, non-empty file. */
+export function canUseReadingRecovery(documentPath: string | null, markdown: string): boolean {
+  return Boolean(documentPath && markdown.trim())
+}
+
 /** Creates a compact, semantic local checkpoint rather than persisting raw scroll pixels. */
 export function createRecoveryCapsule(input: ReadingSnapshotInput): ReadingRecoveryCapsule {
   const lines = input.markdown.split(/\r?\n/)

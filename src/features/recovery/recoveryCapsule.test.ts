@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createRecoveryCapsule, getRecoveryDocumentChangeImpact, loadRecoveryCapsule, resolveRecoveryPosition, saveRecoveryCapsule } from './recoveryCapsule'
+import { canUseReadingRecovery, createRecoveryCapsule, getRecoveryDocumentChangeImpact, loadRecoveryCapsule, resolveRecoveryPosition, saveRecoveryCapsule } from './recoveryCapsule'
 
 const source = `# 开始
 
@@ -15,6 +15,13 @@ const source = `# 开始
 验证结果。`
 
 describe('recovery capsule', () => {
+  it('never offers position-only recovery for the blank startup document', () => {
+    expect(canUseReadingRecovery(null, '')).toBe(false)
+    expect(canUseReadingRecovery(null, '# Unsaved draft')).toBe(false)
+    expect(canUseReadingRecovery('E:\\notes\\guide.md', '   ')).toBe(false)
+    expect(canUseReadingRecovery('E:\\notes\\guide.md', '# Guide')).toBe(true)
+  })
+
   it('records semantic context, time, pending work and local layout', () => {
     const capsule = createRecoveryCapsule({ documentKey: '/notes/runbook.md', markdown: source, scrollRatio: 0.65, durationMs: 92_000, collapsedSections: ['开始'], layout: { fontFamily: 'system-ui, sans-serif', fontSize: 18, lineHeight: 1.8, letterSpacing: 0, paragraphSpacing: 1, contentWidth: 720, isVerticalReading: false, isSidebarOpen: true, isTocOpen: false } })
     expect(capsule).toMatchObject({ version: 2, heading: '部署', pendingTaskCount: 1, durationMs: 92_000, collapsedSections: ['开始'], textFingerprint: expect.any(String), documentFingerprint: expect.any(String) })
