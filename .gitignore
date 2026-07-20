@@ -20,6 +20,7 @@ target/
 
 # Generated installers and debugging symbols
 *.exe
+!releases/windows/墨阅Markdown阅读器_1.0.0_x64-setup.exe
 *.msi
 *.msix
 *.appx

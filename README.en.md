@@ -17,6 +17,14 @@ A local-first Markdown reader and lightweight notepad for Windows. It opens docu
 
 Windows 10/11 x64 is the currently supported and tested platform. The application is built with Tauri 2, React 18, TypeScript, and Rust. Native behavior and visual output have not been accepted on other platforms.
 
+## Download
+
+Download the bundled Windows installer directly: [Moyu Markdown Reader 1.0.0 x64 setup](releases/windows/墨阅Markdown阅读器_1.0.0_x64-setup.exe).
+
+> The EXE committed to this repository is a convenience build and may lag behind the current `main` branch. For the latest features and fixes, clone the repository and build it from source. Stable releases will also be published through GitHub Releases.
+
+The current installer is not commercially code-signed, so Windows may show an unknown-publisher warning.
+
 ## Run from source
 
 Install Node.js 20+, npm 10+, Rust stable with the MSVC toolchain, Microsoft C++ Build Tools, the Windows SDK, and WebView2 Runtime.

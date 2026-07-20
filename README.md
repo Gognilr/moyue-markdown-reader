@@ -19,7 +19,11 @@
 
 ## 下载
 
-正式发布后，请从仓库的 GitHub Releases 页面下载安装包。请核对 Release 中公布的 SHA-256。当前自动生成的 Windows 安装包尚未进行商业代码签名，Windows 可能显示发布者未知提示。
+可直接下载 Windows 安装包：[墨阅Markdown阅读器 1.0.0 x64 安装包](releases/windows/墨阅Markdown阅读器_1.0.0_x64-setup.exe)。下载后运行该 EXE 即可安装。
+
+> 注意：仓库内附带的 EXE 是便捷体验包，可能落后于 `main` 分支源码。需要使用最新功能或修复时，请自行拉取源码并按下文的生产构建命令打包；正式稳定版本会同时发布到 GitHub Releases。
+
+请核对 Release 中公布的 SHA-256。当前 Windows 安装包尚未进行商业代码签名，Windows 可能显示发布者未知提示。
 
 ## 从源码运行
 
