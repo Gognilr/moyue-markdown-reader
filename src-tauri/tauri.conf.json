@@ -1,0 +1,53 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "productName": "墨阅Markdown阅读器",
+  "version": "1.0.0",
+  "identifier": "com.tabbit.mdreader",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "resources": {
+      "icons/moyue/icon-brand-crisp.ico": "moyue-brand-crisp.ico"
+    },
+    "windows": {
+      "nsis": {
+        "installerHooks": "./windows/hooks.nsh",
+        "installerIcon": "./icons/moyue/icon-brand-crisp.ico",
+        "uninstallerIcon": "./icons/moyue/icon-brand-crisp.ico"
+      }
+    },
+    "icon": ["icons/moyue/icon-brand-crisp.ico"],
+    "fileAssociations": [
+      {
+        "ext": ["md", "markdown"],
+        "name": "Markdown Document",
+        "description": "使用墨阅Markdown阅读器打开 Markdown 文件",
+        "role": "Editor"
+      }
+    ]
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "墨阅Markdown阅读器",
+        "width": 1100,
+        "height": 720,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost https: http: data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval';",
+      "assetProtocol": {
+        "enable": true,
+        "scope": []
+      }
+    }
+  }
+}
