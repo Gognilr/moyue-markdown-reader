@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { useHistoryStore } from './useHistoryStore'
+import { mergeHistoryItems, useHistoryStore } from './useHistoryStore'
 
 describe('useHistoryStore', () => {
   beforeEach(() => useHistoryStore.setState({ history: [] }))
@@ -43,5 +43,12 @@ describe('useHistoryStore', () => {
       contentFingerprint: { version: 1, hash: 'abc', characters: 10, lines: 2 },
       previousPaths: ['C:/docs/old-name.md'],
     })])
+  })
+
+  it('keeps a document opened while persisted history is hydrating', () => {
+    const persisted = [{ path: 'C:/docs/older.md', title: 'older', lastOpenedAt: 10, isFavorite: false, scrollPositionRatio: 0.2 }]
+    const runtime = [{ path: 'C:/docs/opened-now.md', title: 'opened-now', lastOpenedAt: 20, isFavorite: false, scrollPositionRatio: 0 }]
+
+    expect(mergeHistoryItems(persisted, runtime)).toEqual([runtime[0], persisted[0]])
   })
 })

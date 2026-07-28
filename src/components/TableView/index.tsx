@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type TableHTMLAttributes } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type TableHTMLAttributes } from 'react'
 import { formatTableNumber, inferTableUnit, isFocusedTableCell, isLongTableCell, matchesTableQuery, parseTableNumber, readTableGrid, selectedTableGrid, sortTableRows, summarizeNumericColumn, toCsv, toMarkdown, toTsv, transposeTableGrid, type NumericSummary, type TableNumberFormat, type TableSortDirection } from '../../features/table/tableLens'
 
 type TableViewProps = TableHTMLAttributes<HTMLTableElement> & { children?: ReactNode }
@@ -22,6 +22,8 @@ export function TableView({ children, ...props }: TableViewProps) {
   const [expandLongCells, setExpandLongCells] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [notice, setNotice] = useState('')
+  const [isToolbarOpen, setIsToolbarOpen] = useState(false)
+  const toolbarId = useId()
 
   useEffect(() => {
     const table = tableRef.current
@@ -119,7 +121,20 @@ export function TableView({ children, ...props }: TableViewProps) {
 
   return <section ref={sectionRef} className={`table-lens${isFullscreen ? ' table-lens--fullscreen' : ''}`} aria-label="Table Lens">
     <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{notice || `${Math.max(visibleGrid.length - 1, 0)} 行表格结果`}</p>
-    <div className="table-lens__toolbar">
+    <div className="table-lens__toolbar-toggle">
+      <button
+        type="button"
+        className="table-lens__toolbar-toggle-button"
+        data-expanded={isToolbarOpen}
+        aria-expanded={isToolbarOpen}
+        aria-controls={toolbarId}
+        onClick={() => setIsToolbarOpen((open) => !open)}
+      >
+        {isToolbarOpen ? '收起表格工具' : '表格工具'}
+      </button>
+      <span className="table-lens__toolbar-summary">表格 · {Math.max(visibleGrid.length - 1, 0)} 行 × {Math.max((grid[0]?.length ?? 0), 0)} 列</span>
+    </div>
+    {isToolbarOpen && <div id={toolbarId} className="table-lens__toolbar">
       <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="筛选表格" aria-label="筛选表格" />
       <span className="table-lens__count">{Math.max(visibleGrid.length - 1, 0)}/{Math.max(grid.length - 1, 0)} 行</span>
       {grid[0] && <label className="table-lens__select">排序列
@@ -144,7 +159,7 @@ export function TableView({ children, ...props }: TableViewProps) {
       <button type="button" onClick={() => void exportXlsx()}>导出 XLSX</button>
       {focused && <><button type="button" onClick={() => void copy('tsv', 'cell')}>复制单元格</button><button type="button" onClick={() => void copy('tsv', 'row')}>复制行</button><button type="button" onClick={() => void copy('tsv', 'column')}>复制列</button></>}
       {(focused || altered) && <button type="button" onClick={resetView}>还原视图</button>}
-    </div>
+    </div>}
     <div className="table-view" tabIndex={0} aria-label="可横向滚动的表格">
       {altered && <table className="table-lens__derived" aria-label="仅阅读视图，未改写 Markdown 源文件"><thead><tr>{displayGrid[0]?.map((cell, column) => <th key={`${column}-${cell}`} data-table-lens-focus={isFocusedTableCell(focused, 0, column)}>{cell}</th>)}</tr></thead><tbody>{displayGrid.slice(1).map((row, rowIndex) => <tr key={`${rowIndex}-${row.join('\u0001')}`}>{row.map((cell, column) => <td key={`${column}-${cell}`} tabIndex={0} data-table-lens-focus={isFocusedTableCell(focused, rowIndex + 1, column)} data-table-lens-expanded={String(expandLongCells || !isLongTableCell(cell))} onClick={() => selectCell(rowIndex + 1, column)} onKeyDown={(event) => onCellKeyDown(event, rowIndex + 1, column)}>{cell}</td>)}</tr>)}</tbody></table>}
       <table ref={tableRef} {...props} hidden={altered} onClick={(event) => {

@@ -14,6 +14,31 @@ function nextOpenedTimestamp(): number {
   return lastOpenedTimestamp
 }
 
+/**
+ * Combines persisted history with entries created while persistence is still
+ * loading. A .md file association can open a document before Tauri Store
+ * finishes reading; replacing state at that point loses the new recent item.
+ */
+export function mergeHistoryItems(
+  persisted: readonly HistoryItem[],
+  runtime: readonly HistoryItem[],
+): HistoryItem[] {
+  const byPath = new Map<string, HistoryItem>()
+  for (const item of persisted) {
+    if (item?.path) byPath.set(item.path, item)
+  }
+  for (const item of runtime) {
+    if (item?.path) byPath.set(item.path, { ...byPath.get(item.path), ...item })
+  }
+
+  const ordered = [...byPath.values()].sort((left, right) => right.lastOpenedAt - left.lastOpenedAt)
+  const favorites = ordered.filter((item) => item.isFavorite)
+  const recent = ordered.filter((item) => !item.isFavorite).slice(0, 50)
+  const history = [...favorites, ...recent].sort((left, right) => right.lastOpenedAt - left.lastOpenedAt)
+  lastOpenedTimestamp = Math.max(lastOpenedTimestamp, ...history.map((item) => item.lastOpenedAt || 0))
+  return history
+}
+
 interface HistoryState {
   history: HistoryItem[]
   setHistory: (history: HistoryItem[]) => void
@@ -29,7 +54,7 @@ interface HistoryState {
 
 export const useHistoryStore = create<HistoryState>((set) => ({
   history: [],
-  setHistory: (history) => set({ history }),
+  setHistory: (history) => set({ history: mergeHistoryItems(history, []) }),
 
   addOrUpdateItem: (path, updates = {}) => set((state) => {
     const existingIndex = state.history.findIndex(item => item.path === path)

@@ -68,6 +68,12 @@ test('drag and drop opens Markdown and XLSX/DOCX/PDF exports download real files
   }, markdown)
   await expect(page.getByRole('heading', { name: '拖入验收' })).toBeVisible()
 
+  const tableTools = page.getByRole('button', { name: '表格工具' })
+  await expect(tableTools).toBeVisible()
+  await expect(page.getByRole('button', { name: '导出 XLSX' })).toBeHidden()
+  await tableTools.click()
+  await expect(page.getByRole('button', { name: '收起表格工具' })).toBeVisible()
+
   const xlsxPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: '导出 XLSX' }).click()
   const xlsx = await xlsxPromise

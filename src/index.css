@@ -236,7 +236,15 @@ body {
   box-shadow: var(--shadow);
 }
 .prose .table-lens { margin: 1.5em 0; }
+.prose .table-lens__toolbar-toggle { display: flex; align-items: center; gap: 0.55rem; min-height: 2.4rem; padding: 0.3rem 0.55rem 0.3rem 0.7rem; border: 1px solid var(--border); background: linear-gradient(90deg, color-mix(in srgb, var(--panel) 92%, var(--paper)), var(--panel)); border-radius: 9px 9px 0 0; font-family: "Inter", "Segoe UI", system-ui, sans-serif; }
+.prose .table-lens__toolbar-toggle-button { display: inline-flex; align-items: center; gap: 0.38rem; margin-left: auto; border: 1px solid color-mix(in srgb, var(--border) 86%, var(--accent)); border-radius: 999px; background: var(--paper); color: var(--text-secondary); cursor: pointer; padding: 0.3rem 0.62rem 0.3rem 0.7rem; font-size: 0.76rem; font-weight: 600; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); transition: border-color 150ms ease, color 150ms ease, background 150ms ease, transform 150ms ease; }
+.prose .table-lens__toolbar-toggle-button::after { content: "⌄"; display: inline-block; color: var(--accent); font-size: 0.95rem; line-height: 0.7; transform: translateY(-1px); transition: transform 150ms ease; }
+.prose .table-lens__toolbar-toggle-button[data-expanded="true"]::after { transform: translateY(1px) rotate(180deg); }
+.prose .table-lens__toolbar-toggle-button:hover { color: var(--text-primary); border-color: var(--accent); background: color-mix(in srgb, var(--paper) 88%, var(--accent)); transform: translateY(-1px); }
+.prose .table-lens__toolbar-toggle-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.prose .table-lens__toolbar-summary { color: var(--text-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; white-space: nowrap; }
 .prose .table-lens__toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 0.45rem; padding: 0.5rem 0.65rem; border: 1px solid var(--border); border-bottom: 0; background: var(--panel); border-radius: 8px 8px 0 0; font-family: "Inter", "Segoe UI", system-ui, sans-serif; }
+.prose .table-lens__toolbar-toggle + .table-lens__toolbar { border-radius: 0; border-top: 0; }
 .prose .table-lens__toolbar input { min-width: 11rem; flex: 1; border: 1px solid var(--border); border-radius: 5px; background: var(--paper); color: var(--text-primary); padding: 0.3rem 0.45rem; }
 .prose .table-lens__toolbar .table-lens__unit { min-width: 6.5rem; flex: 0 1 8rem; }
 .prose .table-lens__select { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--text-secondary); font-size: 0.75rem; white-space: nowrap; }

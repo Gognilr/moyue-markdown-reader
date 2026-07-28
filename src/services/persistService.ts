@@ -1,7 +1,7 @@
 // 持久化服务 —— 封装 tauri-plugin-store 的同步逻辑
 // 在非 Tauri 环境下回退到 localStorage，保证开发可运行
 
-import { useHistoryStore } from '../store/useHistoryStore'
+import { mergeHistoryItems, useHistoryStore } from '../store/useHistoryStore'
 import type { HistoryItem } from '../store/useHistoryStore'
 import { useThemeStore } from '../store/useThemeStore'
 import { useLayoutStore } from '../store/useLayoutStore'
@@ -73,7 +73,10 @@ export const persistService = {
 
       if (data) {
         if (data.history) {
-          useHistoryStore.getState().setHistory(data.history)
+          // Do not replace a document opened during asynchronous startup
+          // hydration (for example through a .md file association).
+          const runtimeHistory = useHistoryStore.getState().history
+          useHistoryStore.getState().setHistory(mergeHistoryItems(data.history, runtimeHistory))
         }
         if (data.theme) {
           useThemeStore.getState().setTheme(data.theme)
