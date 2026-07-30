@@ -30,23 +30,33 @@ export function Toc() {
 
     const scrollContainer = document.querySelector<HTMLElement>('.markdown-view')
     if (!scrollContainer) return
+    let frameId: number | null = null
     const handleScroll = () => {
-      const containerTop = scrollContainer.getBoundingClientRect().top
-      const toolbarHeight = scrollContainer.querySelector<HTMLElement>('.reader-top-tools')?.offsetHeight ?? 0
-      const readingBoundary = containerTop + toolbarHeight + 14
-      const renderedHeadings = scrollContainer.querySelectorAll<HTMLElement>('h1[id], h2[id], h3[id], h4[id]')
-      let current = renderedHeadings[0]?.id || toc[0]?.id || ''
-      for (const el of renderedHeadings) {
-        if (el.getBoundingClientRect().top > readingBoundary) break
-        current = el.id
-      }
-      setActiveId(current)
+      // rAF 节流：每帧最多执行一次，避免滚动时反复强制布局造成卡顿
+      if (frameId !== null) return
+      frameId = requestAnimationFrame(() => {
+        frameId = null
+        const containerTop = scrollContainer.getBoundingClientRect().top
+        const toolbarHeight = scrollContainer.querySelector<HTMLElement>('.reader-top-tools')?.offsetHeight ?? 0
+        const readingBoundary = containerTop + toolbarHeight + 14
+        const renderedHeadings = scrollContainer.querySelectorAll<HTMLElement>('h1[id], h2[id], h3[id], h4[id]')
+        let current = renderedHeadings[0]?.id || toc[0]?.id || ''
+        for (const el of renderedHeadings) {
+          if (el.getBoundingClientRect().top > readingBoundary) break
+          current = el.id
+        }
+        setActiveId(current)
+      })
     }
 
     handleScroll()
     scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
     window.addEventListener('resize', handleScroll)
-    return () => { scrollContainer.removeEventListener('scroll', handleScroll); window.removeEventListener('resize', handleScroll) }
+    return () => {
+      if (frameId !== null) cancelAnimationFrame(frameId)
+      scrollContainer.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', handleScroll)
+    }
   }, [toc])
 
   const handleHeadingClick = useCallback((id: string) => {

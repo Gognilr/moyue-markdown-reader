@@ -147,8 +147,20 @@ pub async fn open_markdown_preview(
     roots: State<'_, crate::commands::AuthorizedDocumentRoots>,
     path: String,
 ) -> Result<PreviewOpenResult, String> {
-    let canonical = canonical_preview_path(&path)?;
-    let canonical = crate::commands::grant_document_directory(&app, &roots, &canonical)?;
+    open_preview_window(&app, &state, &roots, &path)
+}
+
+/// Shared core of `open_markdown_preview`, callable without command plumbing.
+/// The single-instance callback uses it to route `--quick-preview` launches of
+/// a second process into the already-running instance's preview window.
+pub fn open_preview_window(
+    app: &AppHandle,
+    state: &PreviewState,
+    roots: &crate::commands::AuthorizedDocumentRoots,
+    path: &str,
+) -> Result<PreviewOpenResult, String> {
+    let canonical = canonical_preview_path(path)?;
+    let canonical = crate::commands::grant_document_directory(app, roots, &canonical)?;
     let display_path = canonical.to_string_lossy().into_owned();
     {
         let mut current = state
@@ -173,7 +185,7 @@ pub async fn open_markdown_preview(
             window
         }
         None => WebviewWindowBuilder::new(
-            &app,
+            app,
             PREVIEW_WINDOW_LABEL,
             WebviewUrl::App("index.html".into()),
         )

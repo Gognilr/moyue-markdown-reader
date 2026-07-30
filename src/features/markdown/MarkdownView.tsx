@@ -906,7 +906,6 @@ export function MarkdownView({ compact = false }: { compact?: boolean } = {}) {
       onScroll={compact ? undefined : (event) => handleScroll(event, isLargeDocument ? { index: largePageIndex, count: largeDocumentModel.pages.length } : undefined)}
       onMouseUp={ENABLE_ANNOTATION_WORKBENCH ? captureSelection : undefined}
       className={`markdown-view h-full overflow-y-auto px-8 pb-12 select-text${compact ? ' markdown-view--compact pt-4' : ' pt-0'}`}
-      style={{ scrollBehavior: 'smooth' }}
       {...readerLandmarkAria(currentPath ? fileService.getFileName(currentPath) : 'Markdown document')}
       >
       <ScreenReaderAnnouncer message={readerNotice ?? (isSearchOpen ? searchStatusMessage(searchCount ? 1 : 0, searchCount) : '')} />

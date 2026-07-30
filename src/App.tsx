@@ -155,6 +155,25 @@ function App() {
     }).catch((error) => console.error('读取文件关联或快速预览启动参数失败:', error))
   }, [openPath])
 
+  // 单实例模式：第二个进程双击文件时，Rust 端把路径经此事件转发到主窗口。
+  useEffect(() => {
+    if (!isTauri()) return
+    let cancelled = false
+    let unlisten: (() => void) | undefined
+    void (async () => {
+      const { isQuickPreviewWindow } = await import('./features/quick-preview/quickPreview')
+      if (await isQuickPreviewWindow()) return
+      const { listen } = await import('@tauri-apps/api/event')
+      if (cancelled) return
+      unlisten = await listen<string>('md-reader:open-external-file', (event) => {
+        if (typeof event.payload === 'string' && event.payload) {
+          window.dispatchEvent(new CustomEvent<string>('md-reader:open-path', { detail: event.payload }))
+        }
+      })
+    })().catch((error) => console.error('监听外部文件打开事件失败:', error))
+    return () => { cancelled = true; unlisten?.() }
+  }, [])
+
   // Open packages are virtual, read-only sessions.  Their resource object URLs
   // are retired when another package/document replaces the session or App exits.
   useEffect(() => () => packagePreviewRef.current?.dispose(), [])
@@ -233,8 +252,9 @@ function App() {
       content: active.content,
       savedContent: active.savedContent,
       isModified: active.isDirty,
+      mode,
     })
-  }, [activeTabId, content, currentPath, isModified, isTransientPreviewWindow, restoreDocument, tabs])
+  }, [activeTabId, content, currentPath, isModified, isTransientPreviewWindow, mode, restoreDocument, tabs])
 
   useEffect(() => {
     if (isTransientPreviewWindow) return
@@ -475,6 +495,18 @@ function App() {
             <Toc />
           </div>
         )}
+      </div>
+
+      {/* 底部状态栏：为窗口底部提供视觉边界，并展示当前文档与模式信息 */}
+      <div className="app-statusbar flex-shrink-0 h-7 flex items-center justify-between px-4 border-t border-[var(--border)] bg-[var(--panel)] text-[11px] text-[var(--text-muted)] select-none">
+        <span className="flex items-center gap-1.5 min-w-0">
+          {isModified && <span className="text-[var(--accent)]" aria-hidden>●</span>}
+          <span className="truncate">{currentPath ? currentPath.split(/[/\\]/).pop() : '未命名文档'}</span>
+        </span>
+        <span className="flex items-center gap-3 flex-shrink-0">
+          <span>{content.length.toLocaleString()} 字符</span>
+          <span>{mode === 'read' ? '阅读' : '编辑'}</span>
+        </span>
       </div>
       {dialog}
       <UnsavedChangesDialog

@@ -6,8 +6,52 @@ mod explorer_integration;
 mod jump_list;
 mod preview;
 
+use tauri::{Emitter, Manager};
+
+/// 主窗口收到第二实例双击文件的事件名（前端监听后打开该路径）。
+pub const OPEN_EXTERNAL_FILE_EVENT: &str = "md-reader:open-external-file";
+
 fn main() {
     tauri::Builder::default()
+        // 单实例插件必须最先注册：第二个进程启动时，把它的命令行参数
+        // （文件关联路径或 --quick-preview）转发给已在运行的实例处理。
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            let arguments: Vec<String> = argv.into_iter().skip(1).collect();
+
+            // 资源管理器右键“快速预览”：复用当前实例的预览窗口。
+            if let Some(index) = arguments.iter().position(|argument| argument == "--quick-preview") {
+                if let Some(path) = arguments.get(index + 1) {
+                    let state = app.state::<preview::PreviewState>();
+                    let roots = app.state::<commands::AuthorizedDocumentRoots>();
+                    if let Err(error) = preview::open_preview_window(app, &state, &roots, path) {
+                        eprintln!("Unable to route quick preview request: {error}");
+                    }
+                }
+                return;
+            }
+
+            // 文件关联双击：授权后通知主窗口打开，并聚焦主窗口。
+            if let Some(path) = arguments.iter().find(|argument| {
+                let lower = argument.to_ascii_lowercase();
+                (lower.ends_with(".md") || lower.ends_with(".markdown"))
+                    && std::path::Path::new(argument).is_file()
+            }) {
+                let roots = app.state::<commands::AuthorizedDocumentRoots>();
+                match commands::grant_document_directory(app, &roots, std::path::Path::new(path)) {
+                    Ok(canonical) => {
+                        if let Err(error) = app.emit(OPEN_EXTERNAL_FILE_EVENT, canonical.to_string_lossy().into_owned()) {
+                            eprintln!("Unable to deliver file-association path to the main window: {error}");
+                        }
+                    }
+                    Err(error) => eprintln!("Unable to authorize file-association path: {error}"),
+                }
+            }
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())

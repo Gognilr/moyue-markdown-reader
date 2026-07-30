@@ -5,7 +5,7 @@ import { useHistoryStore } from '../../store/useHistoryStore'
 import { useFileStore } from '../../store/useFileStore'
 import { fileService } from '../../services/fileService'
 import { showNotice } from '../../services/noticeService'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Search, Star, Clock, FileText, Trash2, Plus } from 'lucide-react'
 import { createContentFingerprint } from '../../features/relocation/fileRelocation'
 import type { HistoryItem } from '../../types'
@@ -25,6 +25,35 @@ export function Sidebar() {
   const [missingItem, setMissingItem] = useState<HistoryItem | null>(null)
   const [pathIssue, setPathIssue] = useState<HistoryPathIssue>('missing')
   const [relocationCandidate, setRelocationCandidate] = useState<{ path: string; content: string; fingerprintMatches: boolean } | null>(null)
+  /** 悬浮在列表项上时漂浮显示完整文件路径 */
+  const [pathTip, setPathTip] = useState<{ path: string; top: number; left: number; maxWidth: number } | null>(null)
+  const pathTipTimer = useRef<number | null>(null)
+
+  const showPathTip = (event: React.MouseEvent<HTMLElement>, path: string) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    if (pathTipTimer.current !== null) window.clearTimeout(pathTipTimer.current)
+    pathTipTimer.current = window.setTimeout(() => {
+      pathTipTimer.current = null
+      setPathTip({
+        path,
+        top: rect.bottom + 4,
+        left: rect.left + 4,
+        maxWidth: Math.min(480, Math.max(220, window.innerWidth - rect.left - 24)),
+      })
+    }, 350)
+  }
+
+  const hidePathTip = () => {
+    if (pathTipTimer.current !== null) {
+      window.clearTimeout(pathTipTimer.current)
+      pathTipTimer.current = null
+    }
+    setPathTip(null)
+  }
+
+  useEffect(() => () => {
+    if (pathTipTimer.current !== null) window.clearTimeout(pathTipTimer.current)
+  }, [])
 
   const filteredHistory = history.filter(item =>
     item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -105,6 +134,8 @@ export function Sidebar() {
     <div
       key={item.path}
       onClick={() => handleOpenFile(item.path)}
+      onMouseEnter={(event) => showPathTip(event, item.path)}
+      onMouseLeave={hidePathTip}
       className={`group flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all duration-150 ${
         currentPath === item.path ? 'bg-[rgba(204,120,92,0.12)] border-l-[3px] border-[var(--accent)]' : 'hover:bg-[var(--hover)]'
       }`}
@@ -165,7 +196,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 space-y-6">
+      <div className="flex-1 overflow-y-auto px-2 space-y-6" onScroll={hidePathTip}>
         {/* 收藏夹 */}
         <div>
           <div className="flex items-center gap-1 text-[var(--text-muted)] text-xs font-semibold px-2 mb-2 uppercase tracking-wider">
@@ -196,6 +227,15 @@ export function Sidebar() {
           </div>
         </div>
       </div>
+      {pathTip && (
+        <div
+          role="tooltip"
+          className="pointer-events-none fixed z-50 rounded-md border border-[var(--border)] bg-[var(--paper)] px-2 py-1 text-[11px] leading-snug text-[var(--text-secondary)] shadow-lg break-all"
+          style={{ top: pathTip.top, left: pathTip.left, maxWidth: pathTip.maxWidth }}
+        >
+          {pathTip.path}
+        </div>
+      )}
       {missingItem && <div className="absolute inset-0 z-30 grid place-items-center bg-black/25 p-4" role="dialog" aria-modal="true" aria-label="处理无法直接打开的历史文件">
         <div className="w-full max-w-md rounded-xl border border-[var(--border)] bg-[var(--paper)] p-4 shadow-xl">
           <h2 className="text-sm font-semibold">{pathIssue === 'needs-authorization'

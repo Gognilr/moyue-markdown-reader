@@ -85,11 +85,21 @@ export function ReadingFocus({ containerRef, markdown }: ReadingFocusProps) {
   useEffect(() => {
     updateRuler()
     const container = containerRef.current
-    container?.addEventListener('scroll', updateRuler, { passive: true })
-    window.addEventListener('resize', updateRuler)
+    let frameId: number | null = null
+    // rAF 节流：每帧最多更新一次标尺，避免滚动时频繁遍历阅读块触发布局计算
+    const throttledUpdateRuler = () => {
+      if (frameId !== null) return
+      frameId = requestAnimationFrame(() => {
+        frameId = null
+        updateRuler()
+      })
+    }
+    container?.addEventListener('scroll', throttledUpdateRuler, { passive: true })
+    window.addEventListener('resize', throttledUpdateRuler)
     return () => {
-      container?.removeEventListener('scroll', updateRuler)
-      window.removeEventListener('resize', updateRuler)
+      if (frameId !== null) cancelAnimationFrame(frameId)
+      container?.removeEventListener('scroll', throttledUpdateRuler)
+      window.removeEventListener('resize', throttledUpdateRuler)
       container?.querySelectorAll('.reading-ruler-current').forEach((node) => node.classList.remove('reading-ruler-current'))
     }
   }, [containerRef, updateRuler])
