@@ -66,6 +66,7 @@ import type { CompareEntry } from '../render-diff/documentCompare'
 import { canReadDiskRevision, canUseLastSavedRevision, currentBlockForDiffEntry, diffEntrySearchText, makeDiskDiffSource, makeLastSavedDiffSource, makePickedFileDiffSource, type LocalDiffSource } from '../render-diff/diffSources'
 import { canOpenVerifiedLightboxSource } from './lightboxSource'
 import { createLargeDocumentModel, isLargeMarkdown } from './largeDocument'
+import { findTextMatches, nextTextMatchIndex } from '../search/searchModel'
 
 // Soft-retired from the lightweight reader surface. Existing local/sidecar
 // data remains untouched so this product decision never deletes user work.
@@ -87,6 +88,53 @@ export function collectMarkdownImageReferences(markdown: string, limit = 64): st
   return [...references]
 }
 
+interface RenderedSearchMatch {
+  node: Text
+  start: number
+  end: number
+  owner: HTMLElement
+}
+
+/** Finds literal matches in the rendered text nodes, excluding the reader controls. */
+function collectRenderedSearchMatches(root: HTMLElement | null, query: string): RenderedSearchMatch[] {
+  if (!root || !query.trim()) return []
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  const matches: RenderedSearchMatch[] = []
+  let current: Node | null = walker.nextNode()
+  while (current) {
+    if (current.nodeType === Node.TEXT_NODE) {
+      const node = current as Text
+      const owner = node.parentElement
+      if (owner && !owner.closest('script,style,button,input,textarea,select,[aria-hidden="true"]')) {
+        for (const match of findTextMatches(node.data, query)) {
+          matches.push({ node, start: match.start, end: match.end, owner })
+        }
+      }
+    }
+    current = walker.nextNode()
+  }
+  return matches
+}
+
+function rangeForRenderedSearchMatch(match: RenderedSearchMatch): Range {
+  const range = document.createRange()
+  range.setStart(match.node, match.start)
+  range.setEnd(match.node, match.end)
+  return range
+}
+
+function scrollRenderedSearchMatch(match: RenderedSearchMatch, container: HTMLElement): void {
+  const range = rangeForRenderedSearchMatch(match)
+  const rangeRect = range.getBoundingClientRect()
+  const containerRect = container.getBoundingClientRect()
+  const delta = rangeRect.top - containerRect.top - (container.clientHeight - rangeRect.height) / 2
+  if (Number.isFinite(delta) && Math.abs(delta) > 8) {
+    container.scrollBy({ top: delta, behavior: 'smooth' })
+  }
+  match.owner.classList.add('reader-search-hit')
+  window.setTimeout(() => match.owner.classList.remove('reader-search-hit'), 1400)
+}
+
 export function MarkdownView({ compact = false }: { compact?: boolean } = {}) {
   const { content, currentPath, isModified, lastSavedContent } = useFileStore()
   const tabs = useDocumentTabsStore((state) => state.tabs)
@@ -95,6 +143,8 @@ export function MarkdownView({ compact = false }: { compact?: boolean } = {}) {
   const containerRef = useRef<HTMLDivElement>(null)
   const markdownContentRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const searchMatchIndexRef = useRef(-1)
+  const searchQueryRef = useRef('')
   const pendingViewportAnchor = useRef<ViewportAnchor | null>(null)
   const pendingLargePageScrollRatio = useRef<number | null>(null)
   const pendingLargeHeadingId = useRef<string | null>(null)
@@ -241,9 +291,7 @@ export function MarkdownView({ compact = false }: { compact?: boolean } = {}) {
     setIsReadingSuggestionVisible(false)
   }
   const searchCount = useMemo(() => {
-    const query = searchQuery.trim()
-    if (!query) return 0
-    return content.toLocaleLowerCase().split(query.toLocaleLowerCase()).length - 1
+    return findTextMatches(content, searchQuery).length
   }, [content, searchQuery])
   const liveMirrorOptions = useMemo<LiveMirrorOverlayOptions>(() => ({
     searchQuery,
@@ -676,9 +724,31 @@ export function MarkdownView({ compact = false }: { compact?: boolean } = {}) {
     })
   }, [content])
 
-  const findNext = () => {
-    const browserWindow = window as Window & { find?: (query: string, caseSensitive?: boolean, backwards?: boolean, wrapAround?: boolean) => boolean }
-    if (searchQuery.trim()) browserWindow.find?.(searchQuery, false, false, true)
+  const navigateSearch = (direction: 1 | -1) => {
+    const query = searchQuery.trim()
+    const matches = collectRenderedSearchMatches(markdownContentRef.current, query)
+    if (!query || matches.length === 0) {
+      searchMatchIndexRef.current = -1
+      searchQueryRef.current = query
+      if (query) setReaderNotice('当前阅读区域没有找到匹配内容。')
+      return
+    }
+
+    const queryChanged = searchQueryRef.current !== query
+    let nextIndex: number
+    if (queryChanged || searchMatchIndexRef.current < 0) {
+      const viewportTop = containerRef.current?.getBoundingClientRect().top ?? 0
+      const firstVisible = matches.findIndex((match) => rangeForRenderedSearchMatch(match).getBoundingClientRect().top >= viewportTop + 8)
+      nextIndex = direction === 1
+        ? (firstVisible >= 0 ? firstVisible : 0)
+        : (firstVisible >= 0 ? Math.max(0, firstVisible - 1) : matches.length - 1)
+    } else {
+      nextIndex = nextTextMatchIndex(matches, searchMatchIndexRef.current, direction)
+    }
+    searchQueryRef.current = query
+    searchMatchIndexRef.current = nextIndex
+    if (containerRef.current) scrollRenderedSearchMatch(matches[nextIndex], containerRef.current)
+    setReaderNotice(`搜索结果：第 ${nextIndex + 1} / ${matches.length} 处`)
   }
 
   const openProjectDocument = async (path: string, fragment?: string) => {
@@ -1001,10 +1071,11 @@ export function MarkdownView({ compact = false }: { compact?: boolean } = {}) {
       {readerNotice && <p role="status" className="mx-auto mb-4 max-w-[960px] rounded-lg border border-[var(--border)] bg-[var(--paper)] px-3 py-2 text-sm shadow-sm">{readerNotice}</p>}
       {isSearchOpen && (
         <div className="sticky top-0 z-20 mx-auto mb-4 flex max-w-[560px] items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--paper)] p-2 shadow-md">
-          <input ref={searchInputRef} value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') findNext(); if (event.key === 'Escape') setIsSearchOpen(false) }} placeholder="在当前文档中搜索" className="min-w-0 flex-1 bg-transparent px-2 py-1 text-sm outline-none" />
+          <input ref={searchInputRef} value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); searchMatchIndexRef.current = -1 }} onKeyDown={(event) => { if (event.key === 'Enter') navigateSearch(event.shiftKey ? -1 : 1); if (event.key === 'Escape') setIsSearchOpen(false) }} placeholder="在当前文档中搜索" className="min-w-0 flex-1 bg-transparent px-2 py-1 text-sm outline-none" />
           <span className="whitespace-nowrap text-xs text-[var(--text-muted)]">{searchCount} 处</span>
-          <button onClick={findNext} className="rounded px-2 py-1 text-xs text-[var(--accent)] hover:bg-[var(--hover)]">下一个</button>
-          <button onClick={() => setIsSearchOpen(false)} className="rounded px-2 py-1 text-xs text-[var(--text-secondary)] hover:bg-[var(--hover)]">关闭</button>
+          <button type="button" onClick={() => navigateSearch(-1)} disabled={!searchCount} className="rounded px-2 py-1 text-xs text-[var(--accent)] hover:bg-[var(--hover)] disabled:opacity-40">上一个</button>
+          <button type="button" onClick={() => navigateSearch(1)} disabled={!searchCount} className="rounded px-2 py-1 text-xs text-[var(--accent)] hover:bg-[var(--hover)] disabled:opacity-40">下一个</button>
+          <button type="button" onClick={() => setIsSearchOpen(false)} className="rounded px-2 py-1 text-xs text-[var(--text-secondary)] hover:bg-[var(--hover)]">关闭</button>
         </div>
       )}
       {isLargeDocument && (

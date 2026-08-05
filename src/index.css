@@ -164,6 +164,11 @@ body {
   border-radius: 0.18rem;
   transition: background-color 160ms ease, box-shadow 160ms ease;
 }
+.prose .reader-search-hit {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 52%, transparent);
+  border-radius: 0.2rem;
+}
 .prose a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.15s; }
 .prose a:hover { border-color: var(--accent); }
 .prose blockquote {
