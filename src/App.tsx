@@ -27,6 +27,7 @@ import { FirstLaunchCard } from './components/FirstLaunchCard'
 import { dismissFirstLaunch, isMarkdownDrop, shouldShowFirstLaunch } from './features/onboarding/firstLaunch'
 import type { ImportedOpenZipPackage } from './features/format-package/importOpenZipPackage'
 import { activateDocumentSession } from './services/documentSession'
+import { createContentFingerprint } from './features/relocation/fileRelocation'
 
 function App() {
   const { mode, isModified, currentPath, content, restoreDocument, setMode } = useFileStore()
@@ -64,6 +65,8 @@ function App() {
 
   const activateDocumentTab = useCallback((id: string) => {
     activateDocumentSession(id)
+    const tab = useDocumentTabsStore.getState().tabs.find((candidate) => candidate.id === id)
+    if (tab?.path) useHistoryStore.getState().addOrUpdateItem(tab.path)
   }, [])
 
   const requestNativeClose = useCallback(async () => {
@@ -98,6 +101,7 @@ function App() {
   const openPath = useCallback((path: string) => {
     const existing = useDocumentTabsStore.getState().tabs.find((tab) => tab.path === path)
     if (existing) {
+      useHistoryStore.getState().addOrUpdateItem(path)
       activateDocumentTab(existing.id)
       return
     }
@@ -220,6 +224,35 @@ function App() {
     window.addEventListener('md-reader:reload-path', handleReloadPath)
     return () => window.removeEventListener('md-reader:reload-path', handleReloadPath)
   }, [activateDocumentTab, runOrConfirm])
+
+  useEffect(() => {
+    const handleRefreshPath = (event: Event) => {
+      const path = (event as CustomEvent<string>).detail
+      if (!path) return
+      const tab = useDocumentTabsStore.getState().tabs.find((candidate) => candidate.path === path)
+      if (tab?.isDirty && useDocumentTabsStore.getState().activeTabId !== tab.id) {
+        setNotice({ message: '该文件在其他页签有未保存修改，请先切换到该页签并处理修改后再刷新。', level: 'info' })
+        return
+      }
+      runOrConfirm(async () => {
+        try {
+          if (!tab) {
+            await openDocument(path)
+            return
+          }
+          const diskContent = await fileService.readTextFile(path)
+          useDocumentTabsStore.getState().reloadDocument(tab.id, diskContent)
+          useHistoryStore.getState().updateContentFingerprint(path, createContentFingerprint(diskContent))
+          useFileStore.getState().setExternalChange(false)
+        } catch (error) {
+          console.error('刷新历史文件失败:', error)
+          setNotice({ message: '无法从磁盘重新读取该 Markdown 文件。', level: 'error' })
+        }
+      })
+    }
+    window.addEventListener('md-reader:refresh-path', handleRefreshPath)
+    return () => window.removeEventListener('md-reader:refresh-path', handleRefreshPath)
+  }, [openDocument, runOrConfirm])
 
   // Toolbar and other shallow UI surfaces request opens through one guarded route.
   useEffect(() => {

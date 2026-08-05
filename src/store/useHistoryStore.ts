@@ -46,6 +46,8 @@ interface HistoryState {
   addOrUpdateItem: (path: string, updates?: Partial<HistoryItem>) => void
   /** 仅更新滚动位置（不刷新 lastOpenedAt，避免列表频繁重排） */
   updateScrollPosition: (path: string, ratio: number) => void
+  /** 更新磁盘内容指纹，但不把刷新动作冒充为最近打开。 */
+  updateContentFingerprint: (path: string, contentFingerprint: HistoryItem['contentFingerprint']) => void
   /** Rebind a history item after a confirmed local move without losing its reading state. */
   relocateItem: (fromPath: string, toPath: string, updates?: Partial<HistoryItem>) => void
   toggleFavorite: (path: string) => void
@@ -95,6 +97,10 @@ export const useHistoryStore = create<HistoryState>((set) => ({
     history: state.history.map(item =>
       item.path === path ? { ...item, scrollPositionRatio: ratio } : item
     ),
+  })),
+
+  updateContentFingerprint: (path, contentFingerprint) => set((state) => ({
+    history: state.history.map(item => item.path === path ? { ...item, contentFingerprint } : item),
   })),
 
   relocateItem: (fromPath, toPath, updates = {}) => set((state) => {

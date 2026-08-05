@@ -51,4 +51,17 @@ describe('useHistoryStore', () => {
 
     expect(mergeHistoryItems(persisted, runtime)).toEqual([runtime[0], persisted[0]])
   })
+
+  it('moves a reopened document to the top without changing its favorite state', () => {
+    const store = useHistoryStore.getState()
+    store.addOrUpdateItem('C:/docs/first.md')
+    store.addOrUpdateItem('C:/docs/second.md', { isFavorite: true })
+    store.addOrUpdateItem('C:/docs/first.md')
+
+    expect(useHistoryStore.getState().history.map((item) => item.path)).toEqual([
+      'C:/docs/first.md',
+      'C:/docs/second.md',
+    ])
+    expect(useHistoryStore.getState().history[1].isFavorite).toBe(true)
+  })
 })

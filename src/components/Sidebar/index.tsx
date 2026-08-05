@@ -6,7 +6,7 @@ import { useFileStore } from '../../store/useFileStore'
 import { fileService } from '../../services/fileService'
 import { showNotice } from '../../services/noticeService'
 import { useEffect, useRef, useState } from 'react'
-import { Search, Star, Clock, FileText, Trash2, Plus } from 'lucide-react'
+import { Search, Star, Clock, FileText, Trash2, Plus, RefreshCw } from 'lucide-react'
 import { createContentFingerprint } from '../../features/relocation/fileRelocation'
 import type { HistoryItem } from '../../types'
 
@@ -25,6 +25,7 @@ export function Sidebar() {
   const [missingItem, setMissingItem] = useState<HistoryItem | null>(null)
   const [pathIssue, setPathIssue] = useState<HistoryPathIssue>('missing')
   const [relocationCandidate, setRelocationCandidate] = useState<{ path: string; content: string; fingerprintMatches: boolean } | null>(null)
+  const [refreshingPath, setRefreshingPath] = useState<string | null>(null)
   /** 悬浮在列表项上时漂浮显示完整文件路径 */
   const [pathTip, setPathTip] = useState<{ path: string; top: number; left: number; maxWidth: number } | null>(null)
   const pathTipTimer = useRef<number | null>(null)
@@ -129,6 +130,27 @@ export function Sidebar() {
     window.dispatchEvent(new Event('md-reader:new-document'))
   }
 
+  /** 重新读取该历史项对应的磁盘文件；未保存内容仍由主窗口保护流程确认。 */
+  const handleRefreshFile = async (event: React.MouseEvent<HTMLButtonElement>, item: HistoryItem) => {
+    event.stopPropagation()
+    if (refreshingPath) return
+    setRefreshingPath(item.path)
+    try {
+      const status = await fileService.inspectMarkdownPath(item.path)
+      if (status !== 'authorized') {
+        await handleOpenFile(item.path)
+        return
+      }
+      window.dispatchEvent(new CustomEvent<string>('md-reader:refresh-path', { detail: item.path }))
+      showNotice(`正在从磁盘刷新：${item.title}`, 'info')
+    } catch (error) {
+      console.error('刷新历史文件失败:', error)
+      showNotice('无法刷新该 Markdown 文件，请检查路径和权限。', 'error')
+    } finally {
+      setRefreshingPath(null)
+    }
+  }
+
   /** 渲染单个历史条目 */
   const renderItem = (item: typeof history[0]) => (
     <div
@@ -145,6 +167,15 @@ export function Sidebar() {
         <span className="text-xs font-medium text-[var(--text-primary)] truncate">{item.title}</span>
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={(event) => void handleRefreshFile(event, item)}
+          className="p-1 hover:bg-[var(--hover)] rounded text-[var(--text-muted)] hover:text-[var(--accent)]"
+          title="从磁盘刷新"
+          aria-label={`刷新 ${item.title}`}
+          disabled={refreshingPath === item.path}
+        >
+          <RefreshCw size={12} className={refreshingPath === item.path ? 'animate-spin' : ''} />
+        </button>
         <button
           onClick={(e) => {
             e.stopPropagation()
