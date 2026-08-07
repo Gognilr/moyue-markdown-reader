@@ -7,6 +7,10 @@ import { isOpenPackagePath } from '../features/format-package/importOpenZipPacka
 
 /** Saves one tab's snapshot without switching away from a different active tab. */
 export async function saveDocumentTab(tabId: string): Promise<boolean> {
+  // Capture the mode at the start of the save. Native writes can trigger the
+  // file watcher before the tab checkpoint finishes; the checkpoint must keep
+  // the mode the user was in when they clicked Save.
+  const mode = useFileStore.getState().mode
   const tab = useDocumentTabsStore.getState().tabs.find((candidate) => candidate.id === tabId)
   if (!tab) return false
   if (isOpenPackagePath(tab.path)) {
@@ -20,7 +24,6 @@ export async function saveDocumentTab(tabId: string): Promise<boolean> {
   tabs.bindSavedPath(tabId, savePath)
   tabs.markSaved(tabId)
   if (tabs.activeTabId === tabId) {
-    const mode = useFileStore.getState().mode
     useFileStore.getState().restoreDocument({ path: savePath, content: tab.content, mode })
   }
   useHistoryStore.getState().addOrUpdateItem(savePath, { contentFingerprint: createContentFingerprint(tab.content) })
@@ -62,7 +65,7 @@ export async function openDocument(path: string): Promise<string> {
     content,
   })
   useDocumentTabsStore.getState().activateTab(id)
-  useFileStore.getState().restoreDocument({ path, content })
+  useFileStore.getState().restoreDocument({ path, content, mode: 'read' })
   useHistoryStore.getState().addOrUpdateItem(path, { contentFingerprint: createContentFingerprint(content) })
   return id
 }

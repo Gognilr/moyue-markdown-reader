@@ -34,18 +34,28 @@ export const useFileStore = create<FileState>((set) => ({
   hasExternalChange: false,
   mode: 'read', // 默认阅读模式
   setCurrentPath: (path) => set({ currentPath: path }),
-  setContent: (content) => set({ content, isModified: true }),
+  // Any content mutation originates from an editor action (typing, Enter,
+  // Delete/Backspace, replace, or undo/redo). Mark it as editing atomically so
+  // a concurrent refresh/checkpoint cannot render the read surface between the
+  // keystroke and the dirty-state update.
+  setContent: (content) => set({ content, isModified: true, mode: 'edit' }),
   replaceContent: (content) => set({ content }),
   setLastSavedContent: (lastSavedContent) => set({ lastSavedContent }),
   setModified: (isModified) => set({ isModified }),
   setExternalChange: (hasExternalChange) => set({ hasExternalChange }),
   setMode: (mode) => set({ mode }),
-  restoreDocument: ({ path, content, savedContent = content, isModified = false, mode = 'read' }) => set({
+  restoreDocument: ({ path, content, savedContent = content, isModified = false, mode }) => set((state) => ({
     currentPath: path,
     content,
     lastSavedContent: savedContent,
     isModified,
     hasExternalChange: false,
-    mode,
-  }),
+    // A refresh/save checkpoint should not silently change the user's mode.
+    // Callers that intentionally open a new document pass mode explicitly.
+    // A stale same-document read checkpoint must not interrupt an unsaved edit
+    // (this is especially important for Delete/Backspace racing file events).
+    mode: state.currentPath === path && state.mode === 'edit' && (state.isModified || isModified)
+      ? state.mode
+      : mode ?? state.mode,
+  })),
 }))

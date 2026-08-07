@@ -6,7 +6,7 @@ import { activateDocumentSession } from './documentSession'
 describe('document session activation', () => {
   beforeEach(() => {
     useDocumentTabsStore.setState({ tabs: [], activeTabId: null })
-    useFileStore.getState().restoreDocument({ path: null, content: '' })
+    useFileStore.getState().restoreDocument({ path: null, content: '', mode: 'read' })
   })
 
   it('checkpoints the current edit and atomically restores the selected dirty tab', () => {

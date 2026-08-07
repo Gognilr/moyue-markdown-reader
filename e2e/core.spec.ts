@@ -33,6 +33,13 @@ test('first launch, picker open, edit, unsaved protection, save and print', asyn
   await expect(editor).toBeVisible()
   const original = await editor.inputValue()
   await editor.fill(`${original}\n\n端到端回归修改`)
+  await editor.press('End')
+  await editor.press('Enter')
+  // Editing keystrokes must not cause the renderer to fall back to reading mode.
+  await expect(page.getByTestId('markdown-editor')).toBeVisible()
+  await editor.press('Control+Home')
+  await editor.press('Delete')
+  await expect(page.getByTestId('markdown-editor')).toBeVisible()
 
   await page.getByTestId('new-document').click()
   await expect(page.getByRole('dialog')).toBeHidden()

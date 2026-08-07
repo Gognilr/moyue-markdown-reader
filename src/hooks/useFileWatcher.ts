@@ -24,10 +24,19 @@ export function useFileWatcher() {
       try {
         window.dispatchEvent(new CustomEvent('md-reader:before-external-refresh'))
         const content = await fileService.readTextFile(currentPath)
-        if (disposed || useFileStore.getState().currentPath !== currentPath) return
+        const latestState = useFileStore.getState()
+        if (disposed || latestState.currentPath !== currentPath) return
+        // The user may have started editing while the disk read was pending.
+        // Do not overwrite that local edit with the older external snapshot.
+        if (latestState.isModified) {
+          latestState.setExternalChange(true)
+          return
+        }
         const tab = useDocumentTabsStore.getState().tabs.find((candidate) => candidate.path === currentPath)
         if (tab) useDocumentTabsStore.getState().reloadDocument(tab.id, content)
-        useFileStore.getState().restoreDocument({ path: currentPath, content })
+        // The watcher is also notified by our own save. Refreshing bytes must
+        // never switch an active editor back to read mode.
+        latestState.restoreDocument({ path: currentPath, content, mode: latestState.mode })
       } catch (error) {
         console.error('刷新外部文件变更失败:', error)
       }

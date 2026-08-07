@@ -27,6 +27,7 @@ export function activateDocumentSession(id: string): boolean {
     content: target.content,
     savedContent: target.savedContent,
     isModified: target.isDirty,
+    mode: 'read',
   })
   return true
 }

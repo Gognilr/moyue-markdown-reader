@@ -42,7 +42,7 @@ export function QuickPreviewRuntime({ onError }: QuickPreviewRuntimeProps) {
         if (disposed) return
         // Do not call openDocument: the preview must not write normal-reader
         // history or mutate the main reader's session semantics.
-        useFileStore.getState().restoreDocument({ path, content })
+        useFileStore.getState().restoreDocument({ path, content, mode: 'read' })
       } catch (error) {
         report(error)
       }

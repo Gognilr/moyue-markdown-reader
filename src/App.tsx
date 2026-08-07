@@ -196,7 +196,7 @@ function App() {
         } else {
           openTab({ path: imported.path, title: imported.name, content: imported.markdown })
         }
-        restoreDocument({ path: imported.path, content: imported.markdown })
+        restoreDocument({ path: imported.path, content: imported.markdown, mode: 'read' })
         setNotice({ message: `已以只读方式打开随身包：${imported.name}`, level: 'info' })
       })
     }
@@ -271,7 +271,7 @@ function App() {
     const active = tabs.find((tab) => tab.id === activeTabId)
     if (!active) {
       if (tabs.length === 0 && activeTabId === null && currentPath !== null) {
-        restoreDocument({ path: null, content: '' })
+        restoreDocument({ path: null, content: '', mode: 'read' })
       }
       return
     }
