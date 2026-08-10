@@ -13,7 +13,10 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
   useEffect(() => {
     let cancelled = false
     void import('mermaid').then(async ({ default: mermaid }) => {
-      mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'base' })
+      // WebView2 对 Mermaid 默认的 SVG <foreignObject> XHTML 标签绘制不稳定；
+      // 改用原生 SVG <text>/<tspan>，确保打包桌面端和浏览器中的流程图文字都可见。
+      // Mermaid 11.0.0 的 flowchart 配置同时影响 flowchart 和 stateDiagram-v2。
+      mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'base', flowchart: { htmlLabels: false } })
       const rendered = await mermaid.render(`mermaid-${id}`, chart)
       if (!cancelled) {
         setSvg(rendered.svg)
@@ -27,5 +30,5 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
 
   if (error) return <pre className="my-4 overflow-x-auto rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">Mermaid：{error}</pre>
   if (!svg) return <div className="my-4 rounded-lg border border-[var(--border)] bg-[var(--panel)] p-3 text-xs text-[var(--text-muted)]">正在渲染 Mermaid 图表…</div>
-  return <div className="my-5 overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--paper)] p-4" dangerouslySetInnerHTML={{ __html: svg }} />
+  return <div className="mermaid-diagram my-5 overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--paper)] p-4" dangerouslySetInnerHTML={{ __html: svg }} />
 }
